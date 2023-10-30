@@ -18,6 +18,7 @@ type CLI struct {
 	desc        string
 	author      string
 	cmds        map[string]*CLICmd
+	envs        map[string]*CLIFlag
 	parsedFlags map[string]string
 	parsedArgs  map[string]string
 	stdout      *os.File
@@ -32,6 +33,15 @@ func (c *CLI) AttachCmd(cmd *CLICmd) {
 		c.cmds = make(map[string]*CLICmd)
 	}
 	c.cmds[n] = cmd
+}
+
+// AttachEnv attaches instance of CLIFlag as a required env.
+func (c *CLI) AttachEnv(flg *CLIFlag) {
+	n := flg.name
+	if c.envs == nil {
+		c.envs = make(map[string]*CLIFlag)
+	}
+	c.envs[n] = flg
 }
 
 // GetCmd returns instance of CLICmd of command k.
@@ -54,6 +64,17 @@ func (c *CLI) GetSortedCmds() []string {
 func (c *CLI) PrintHelp() {
 	fmt.Fprintf(c.stdout, c.name+" by "+c.author+"\n"+c.desc+"\n\n")
 	fmt.Fprintf(c.stdout, "Usage: "+path.Base(os.Args[0])+" [FLAGS] COMMAND\n\n")
+
+	if len(c.envs) > 0 {
+		fmt.Fprintf(c.stdout, "Required environment variables:\n")
+		w := new(tabwriter.Writer)
+		w.Init(c.stdout, 8, 8, 0, '\t', 0)
+		for n, flg := range c.envs {
+			fmt.Fprintf(w, "%s\t%s\n", n, flg.desc)
+		}
+		w.Flush()
+	}
+
 	fmt.Fprintf(c.stdout, "Commands:\n")
 
 	w := new(tabwriter.Writer)
@@ -78,6 +99,12 @@ func (c *CLI) AddCmd(n string, d string, f func(cli *CLI) int) *CLICmd {
 	cmd := NewCLICmd(n, d, f)
 	c.AttachCmd(cmd)
 	return cmd
+}
+
+// AddRequiredEnv create a new flag
+func (c *CLI) AddRequiredEnv(n string, d string, nf int32) {
+	flg := NewCLIFlag(n, "", "", d, nf, nil)
+	c.AttachEnv(flg)
 }
 
 // AddFlagToCmds adds a flag to all attached commands. It creates CLIFlag instance and attaches it.
@@ -127,6 +154,20 @@ func (c *CLI) getFlagSetPtrs(cmd *CLICmd) (map[string]interface{}, map[string]in
 
 // parseFlags iterates over flags and args and validates them. In case of error it prints out to CLI stderr.
 func (c *CLI) parseFlags(cmd *CLICmd) int {
+	// check required environment variables
+	if len(cmd.envs) > 0 {
+		for env, flg := range cmd.envs {
+			v := os.Getenv(env)
+			flg.nflags = flg.nflags | Required
+			err := flg.ValidateValue(false, v, "")
+			if err != nil {
+				fmt.Fprintf(c.stderr, "ERROR: "+err.Error()+"\n")
+				cmd.PrintHelp(c)
+				return 1
+			}
+		}
+	}
+
 	if c.parsedFlags == nil {
 		c.parsedFlags = make(map[string]string)
 	}
@@ -224,6 +265,21 @@ func (c *CLI) Run(stdout *os.File, stderr *os.File) int {
 				c.GetCmd(n).PrintHelp(c)
 				return 0
 			}
+
+			// check required environment variables
+			if len(c.envs) > 0 {
+				for env, flg := range c.envs {
+					v := os.Getenv(env)
+					flg.nflags = flg.nflags | Required
+					err := flg.ValidateValue(false, v, "")
+					if err != nil {
+						fmt.Fprintf(c.stderr, "ERROR: "+err.Error()+"\n")
+						c.PrintHelp()
+						return 1
+					}
+				}
+			}
+
 			exitCode := c.parseFlags(c.GetCmd(n))
 			if exitCode > 0 {
 				return exitCode
