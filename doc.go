@@ -1,5 +1,5 @@
 /*
-Package cli is meant to make handling command line interface easier.
+Package broccli is meant to make handling command line interface easier.
 
 You define commands with flags, attach a handler to it and package does all
 the parsing.
@@ -14,7 +14,7 @@ Let's start with an example covering everything. First, let's create main
 CLI instance and commands:
 
     func main() {
-        myCLI      := cli.NewCLI("Example CLI", "Silly app", "Author <a@example.com>")
+        myCLI      := broccli.NewCLI("Example CLI", "Silly app", "Author <a@example.com>")
 
         cmdInit    := myCLI.AddCmd("init", "Initialises the project", InitHandler)
         cmdStart   := myCLI.AddCmd("start", "Start the application", StartHandler)
@@ -48,12 +48,12 @@ Finally, let's create functions to handle our commands. In below code, you can
 see that method Flag on CLI instance (passed as first argument) can be
 used to get a flag value.
 
-    func InitHandler(c *cli.CLI) int {
+    func InitHandler(c *broccli.CLI) int {
         fmt.Fprintf(os.Stdout, "Template path: %s\n", c.Flag("template"))
         return 0
     }
 
-    func StartHandler(c *cli.CLI) int {
+    func StartHandler(c *broccli.CLI) int {
         fmt.Fprintf(os.Stdout, "Username: %s\n", c.Flag("username"))
         return 0
     }
