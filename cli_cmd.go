@@ -18,6 +18,7 @@ type CLICmd struct {
 	args           map[string]*CLIFlag
 	argsOrder      []string
 	argsIdx        int
+	envs           map[string]*CLIFlag
 	handler        func(c *CLI) int
 	postValidation func(*CLI) error
 }
@@ -66,6 +67,16 @@ func (c *CLICmd) getArgsHelpLine() string {
 func (c *CLICmd) PrintHelp(cli *CLI) {
 	fmt.Fprintf(cli.stdout, fmt.Sprintf("\nUsage:  %s %s [FLAGS]%s\n\n", path.Base(os.Args[0]), c.name, c.getArgsHelpLine()))
 	fmt.Fprintf(cli.stdout, fmt.Sprintf("%s\n", c.desc))
+
+	if len(c.envs) > 0 {
+		fmt.Fprintf(cli.stdout, "\nRequired environment variables:\n")
+		w := new(tabwriter.Writer)
+		w.Init(cli.stdout, 8, 8, 0, '\t', 0)
+		for n, flg := range c.envs {
+			fmt.Fprintf(w, "%s\t%s\n", n, flg.desc)
+		}
+		w.Flush()
+	}
 
 	w := new(tabwriter.Writer)
 	w.Init(cli.stdout, 8, 8, 0, '\t', 0)
@@ -118,6 +129,15 @@ func (c *CLICmd) AttachArg(flag *CLIFlag) {
 	c.argsIdx++
 }
 
+// AttachEnv attaches instance of CLIFlag to CLICmd as a required env.
+func (c *CLICmd) AttachEnv(flag *CLIFlag) {
+	n := flag.name
+	if c.envs == nil {
+		c.envs = make(map[string]*CLIFlag)
+	}
+	c.envs[n] = flag
+}
+
 // AddFlag adds a flag to a command. It creates CLIFlag instance and attaches it.
 func (c *CLICmd) AddFlag(n string, a string, hv string, d string, nf int32, fn func(*CLICmd)) {
 	flg := NewCLIFlag(n, a, hv, d, nf, fn)
@@ -131,6 +151,12 @@ func (c *CLICmd) AddArg(n string, hv string, d string, nf int32) {
 	}
 	arg := NewCLIFlag(n, "", hv, d, nf, nil)
 	c.AttachArg(arg)
+}
+
+// AddRequiredEnv adds a required environment variable to a command. It creates CLIFlag instance and attaches it.
+func (c *CLICmd) AddRequiredEnv(n string, d string, nf int32) {
+	flg := NewCLIFlag(n, "", "", d, nf, nil)
+	c.AttachEnv(flg)
 }
 
 // AddPostValidation attaches an additional validation function that is executed after the default CLI validation
