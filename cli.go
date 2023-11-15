@@ -109,8 +109,8 @@ func (c *CLI) AddRequiredEnv(n string, d string, nf int32) {
 
 // AddFlagToCmds adds a flag to all attached commands. It creates CLIFlag instance and attaches it.
 func (c *CLI) AddFlagToCmds(n string, a string, hv string, d string, nf int32, fn func(*CLICmd)) {
-	for _, n := range c.GetSortedCmds() {
-		cmd := c.GetCmd(n)
+	for _, nm := range c.GetSortedCmds() {
+		cmd := c.GetCmd(nm)
 		flg := NewCLIFlag(n, a, hv, d, nf, fn)
 		cmd.AttachFlag(flg)
 	}
@@ -118,8 +118,8 @@ func (c *CLI) AddFlagToCmds(n string, a string, hv string, d string, nf int32, f
 
 // AddArg adds an argument to all attached commands.
 func (c *CLI) AddArgToCmds(n string, hv string, d string, nf int32) {
-	for _, n := range c.GetSortedCmds() {
-		cmd := c.GetCmd(n)
+	for _, nm := range c.GetSortedCmds() {
+		cmd := c.GetCmd(nm)
 		if cmd.argsIdx > 9 {
 			log.Fatal("Only 10 arguments are allowed")
 		}
