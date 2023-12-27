@@ -26,6 +26,9 @@ type Cmd struct {
 
 // AddFlag adds a flag to a command. It creates Param instance and attaches it.
 func (c *Cmd) AddFlag(n string, a string, hv string, d string, t int64, f int64, opts ...paramOption) {
+	if c.flags == nil {
+		c.flags = map[string]*param{}
+	}
 	c.flags[n] = &param{
 		name:      n,
 		alias:     a,
@@ -45,6 +48,9 @@ func (c *Cmd) AddArg(n string, hv string, d string, t int64, f int64, opts ...pa
 	if c.argsIdx > 9 {
 		log.Fatal("Only 10 arguments are allowed")
 	}
+	if c.args == nil {
+		c.args = map[string]*param{}
+	}
 	c.args[n] = &param{
 		name:      n,
 		desc:      d,
@@ -52,6 +58,9 @@ func (c *Cmd) AddArg(n string, hv string, d string, t int64, f int64, opts ...pa
 		valueType: t,
 		flags:     f,
 		options:   paramOptions{},
+	}
+	if c.argsOrder == nil {
+		c.argsOrder = make([]string, 10)
 	}
 	c.argsOrder[c.argsIdx] = n
 	c.argsIdx++
@@ -62,6 +71,9 @@ func (c *Cmd) AddArg(n string, hv string, d string, t int64, f int64, opts ...pa
 
 // AddEnvVar adds a required environment variable to a command. It creates Param instance and attaches it.
 func (c *Cmd) AddEnvVar(n string, d string, t int64, f int64, opts ...paramOption) {
+	if c.envVars == nil {
+		c.envVars = map[string]*param{}
+	}
 	c.envVars[n] = &param{
 		name:      n,
 		desc:      d,
@@ -111,10 +123,6 @@ func (c *Cmd) sortedEnvVars() []string {
 	}
 	sort.Strings(sevs)
 	return sevs
-}
-
-func (c *Cmd) Flags() []reflect.Value {
-	return reflect.ValueOf(c.flags).MapKeys()
 }
 
 // PrintHelp prints command usage information to stdout file.

@@ -43,6 +43,9 @@ func (c *CLI) AddCmd(n string, d string, h func(cli *CLI) int, opts ...cmdOption
 	c.cmds[n] = &Cmd{
 		name:    n,
 		desc:    d,
+		flags:   map[string]*param{},
+		args:    map[string]*param{},
+		envVars: map[string]*param{},
 		handler: h,
 		options: cmdOptions{},
 	}
