@@ -13,6 +13,8 @@ import (
 
 // CLI is main CLI application definition.
 // It has a name, description, author which are printed out to the screen in the usage syntax.
+// Each CLI have commands (represented by Cmd).  Optionally, it is possible to require environment
+// variables.
 type CLI struct {
 	name        string
 	desc        string
@@ -23,7 +25,8 @@ type CLI struct {
 	parsedArgs  map[string]string
 }
 
-// NewCLI creates new instance of CLI with name n, description d and author a and returns it.
+// NewCLI returns pointer to a new CLI instance with specified name, description and author.  All these are used when
+// displaying syntax help.
 func NewCLI(n string, d string, a string) *CLI {
 	c := &CLI{
 		name:        n,
@@ -37,8 +40,9 @@ func NewCLI(n string, d string, a string) *CLI {
 	return c
 }
 
-// AddCmd creates a new command with name n, description d and handler of h.
-// It creates instance of Cmd, attaches it to CLI and returns it.
+// AddCmd returns pointer to a new command with specified name, description and handler.  Handler is a function that
+// gets called when command is executed.
+// Additionally, there is a set of options that can be passed as arguments.  Search for cmdOption for more info.
 func (c *CLI) AddCmd(n string, d string, h func(cli *CLI) int, opts ...cmdOption) *Cmd {
 	c.cmds[n] = &Cmd{
 		name:    n,
@@ -55,7 +59,8 @@ func (c *CLI) AddCmd(n string, d string, h func(cli *CLI) int, opts ...cmdOption
 	return c.cmds[n]
 }
 
-// AddEnvVar creates a new environment variable with name n, description n and options.
+// AddEnvVar returns pointer to a new environment variable that is required to run every command.
+// Method requires name, eg. MY_VAR, and description.
 func (c *CLI) AddEnvVar(n string, d string) {
 	c.envVars[n] = &param{
 		name:    n,
@@ -76,7 +81,8 @@ func (c *CLI) Arg(n string) string {
 }
 
 // Run parses the arguments, validates them and executes command handler.
-// In case of invalid arguments, error is printed to stderr and 1 is returned. Return value behaves like exit code.
+// In case of invalid arguments, error is printed to stderr and 1 is returned.  Return value should be treated as exit
+// code.
 func (c *CLI) Run() int {
 	// display help, first arg is binary filename
 	if len(os.Args) < 2 || os.Args[1] == "-h" || os.Args[1] == "--help" {
@@ -236,6 +242,10 @@ func (c *CLI) processFlags(cmd *Cmd, fs []string, nflags map[string]interface{},
 	for _, name := range fs {
 		flag := cmd.flags[name]
 
+		if flag.valueType == TypeBool {
+			continue
+		}
+
 		aliasValue := *(aflags[flag.alias]).(*string)
 		nameValue := *(nflags[name]).(*string)
 		if nameValue != "" && aliasValue != "" {
@@ -295,7 +305,6 @@ func (c *CLI) processOnPostValidation(cmd *Cmd) int {
 	return 0
 }
 
-// parseFlags iterates over flags and args and validates them. In case of error it prints out to CLI stderr.
 func (c *CLI) parseFlags(cmd *Cmd) int {
 	// check required environment variables
 	if exitCode := c.checkEnvVars(cmd); exitCode != 0 {

@@ -1,10 +1,11 @@
 package broccli
 
 import (
-	"testing"
 	"fmt"
+	"testing"
 )
 
+// TestCmdParams creates a dummy Cmd instance and tests attaching flags, args and environment variables.
 func TestCmdParams(t *testing.T) {
 	c := &Cmd{}
 	c.AddFlag("flag1", "f1", "int", "Flag 1", TypeInt, IsRequired)

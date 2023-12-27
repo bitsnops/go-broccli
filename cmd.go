@@ -24,7 +24,10 @@ type Cmd struct {
 	options   cmdOptions
 }
 
-// AddFlag adds a flag to a command. It creates Param instance and attaches it.
+// AddFlag adds a flag to a command and returns a pointer to Param instance.
+// Method requires name (eg. 'data' for '--data', alias (eg. 'd' for '-d'), placeholder for the value displayed on the
+// 'help' screen, description, type of the value and additional validation that is set up with bit flags, eg. IsRequired
+// or AllowMultipleValues.  If no additional flags are required, 0 should be used.
 func (c *Cmd) AddFlag(n string, a string, hv string, d string, t int64, f int64, opts ...paramOption) {
 	if c.flags == nil {
 		c.flags = map[string]*param{}
@@ -43,7 +46,8 @@ func (c *Cmd) AddFlag(n string, a string, hv string, d string, t int64, f int64,
 	}
 }
 
-// AddArg adds an argument to a command.
+// AddArg adds an argument to a command and returns a pointer to Param instance.  It is the same as adding flag except
+// it does not have an alias.
 func (c *Cmd) AddArg(n string, hv string, d string, t int64, f int64, opts ...paramOption) {
 	if c.argsIdx > 9 {
 		log.Fatal("Only 10 arguments are allowed")
@@ -69,7 +73,8 @@ func (c *Cmd) AddArg(n string, hv string, d string, t int64, f int64, opts ...pa
 	}
 }
 
-// AddEnvVar adds a required environment variable to a command. It creates Param instance and attaches it.
+// AddEnvVar adds a required environment variable to a command and returns a pointer to Param.  It's arguments are very
+// similar to ones in previous AddArg and AddFlag methods.
 func (c *Cmd) AddEnvVar(n string, d string, t int64, f int64, opts ...paramOption) {
 	if c.envVars == nil {
 		c.envVars = map[string]*param{}

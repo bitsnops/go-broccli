@@ -10,6 +10,7 @@ func h(c *CLI) int {
 	return 0
 }
 
+// TestParamValidationBasic tests basic validation for specific types.
 func TestParamValidationBasic(t *testing.T) {
 	p := &param{}
 	if p.validateValue("") != nil {
@@ -56,6 +57,7 @@ func TestParamValidationBasic(t *testing.T) {
 	}
 }
 
+// TestParamValidationRequired tests IsRequired flag.
 func TestParamValidationRequired(t *testing.T) {
 	p := &param{
 		flags: IsRequired,
@@ -68,6 +70,8 @@ func TestParamValidationRequired(t *testing.T) {
 	}
 }
 
+// TestParamValidationExtraChars tests flags such as AllowUnderscore that allow TypeAlphanumeric to contain
+// extra characters.
 func TestParamValidationExtraChars(t *testing.T) {
 	p := &param{
 		valueType: TypeAlphanumeric,
@@ -96,6 +100,7 @@ func TestParamValidationExtraChars(t *testing.T) {
 	}
 }
 
+// TestParamValidationMultipleValues tests params that allow multiple values.
 func TestParamValidationMultipleValues(t *testing.T) {
 	p := &param{
 		valueType: TypeAlphanumeric,
@@ -124,7 +129,9 @@ func TestParamValidationMultipleValues(t *testing.T) {
 	}
 }
 
-func TestParamValdationFiles(t *testing.T) {
+// TestParamValidationFiles creates param of TypePathFile and tests additional validation flags related to checking
+// if file is a regular file, if it exists etc.
+func TestParamValidationFiles(t *testing.T) {
 	f, err := os.CreateTemp("", "example")
 	if err != nil {
 		log.Fatal(err)
