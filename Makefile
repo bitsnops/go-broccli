@@ -1,7 +1,7 @@
 VERSION?=$$(cat version.go | grep VERSION | cut -d"=" -f2 | sed 's/"//g')
 GOFMT_FILES?=$$(find . -name '*.go')
 PROJECT_BIN?=go-broccli
-PROJECT_SRC?=github.com/bitsnops/go-broccli
+PROJECT_SRC?=github.com/mikogs/go-broccli
 
 default: build
 

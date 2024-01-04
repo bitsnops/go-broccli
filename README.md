@@ -1,13 +1,10 @@
 # go-broccli
 
-[![Go Reference](https://pkg.go.dev/badge/github.com/bitsnops/go-broccli.svg)](https://pkg.go.dev/github.com/bitsnops/go-broccli)
-
 ----
 
-Package `bitsnops/broccli` is meant to make handling command line interface easier.
+Package `mikogs/broccli` is meant to make handling command line interface easier.
 
-You define commands with flags, attach a handler to it and package does all
-the parsing.
+You define commands with arguments, flags, attach a handler to it and package does all the parsing.
 
 ----
 
@@ -18,7 +15,7 @@ Ensure you have your
 run the following:
 
 ```
-go get -u github.com/bitsnops/go-broccli
+go get -u github.com/mikogs/go-broccli/v2
 ```
 
 ### Example
@@ -28,58 +25,58 @@ Let's start with an example covering everything. First, let's create main
 
 ```
 func main() {
-    myCLI      := broccli.NewCLI("Example CLI", "Silly app", "Author <a@example.com>")
+    myCLI := broccli.NewCLI("Example", "App", "Author <a@example.com>")
 
-    cmdInit    := myCLI.AddCmd("init", "Initialises the project", InitHandler)
-    cmdStart   := myCLI.AddCmd("start", "Start the application", StartHandler)
+    print := myCLI.AddCmd("print", "Prints out flags", func(c *CLI) int {
+        fmt.Fprintf(os.Stdout, "Printing on the screen:\n%s\n%s\n\n", c.Flag("text1"), c.Arg("text2"))
+        return 2
+    })
+    template := myCLI.AddCmd("template", "Process template", func(c *CLI) int {
+        fmt.Fprintf(os.Stdout, "Do something here")
+        return 0
+    })
+    start := myCLI.AddCmd("start", "Start the game", func(c *CLI) int {
+        fmt.Fprintf(os.Stdout, "Do something here")
+        return 0
+    })
 }
 ```
 
-Next, let's add flags to our commands:
+Next, let's add flags, args and required environments variables to our commands:
 
 ```
-    cmdInit.AddFlag("template", "t", "filepath", "Path to template file", TypePathFile|MustExist|Required, nil)
-    cmdInit.AddFlag("file-output", "o", "filepath", "Output to a specific file instead of stdout", TypePathFile, nil)
-    cmdInit.AddFlag("number", "n", "int", "Number necessary for initialisation", TypeInt|Required, nil)
+    print.AddFlag("text1", "a", "Text", "Text to print", TypeString, IsRequired)
+    print.AddFlag("text2", "b", "Alphanum with dots", "Can have dots", TypeAlphanumeric, AllowDots)
+    // If '-r' is passed, the '--text2'/'-b' flag is required
+    print.AddFlag("make-text2-required", "r", "", "Make alphanumdots required", TypeBool, 0, OnTrue(func(c *Cmd) {
+        c.flags["text2"].flags = c.flags["text2"].flags | IsRequired
+    }))
 
-    cmdStart.AddFlag("verbose", "v", "", "Verbose mode", TypeBool, nil)
-    cmdStart.AddFlag("username", "u", "username", "Username", TypeAlphanumeric|AllowDots|AllowUnderscore|Required, nil)
-    cmdStart.AddFlag("threshold", "", "1.5", "Threshold, default 1.5", TypeFloat, nil)
-    cmdStart.AddArg("input", "FILE", "Path to a file", TypePathFile|Required)
-    cmdStart.AddArg("difficulty", "DIFFICULTY", "Level of difficulty (1-5), default 3", TypeInt)
+    template.AddFlag("template", "t", "filepath", "Path to template file", TypePathFile, IsExistent|IsRequired)
+    template.AddFlag("file-output", "o", "filepath", "Output to a specific file instead of stdout", TypePathFile, 0)
+    template.AddFlag("number", "n", "int", "Number necessary for initialisation", TypeInt, IsRequired)
+
+    start.AddFlag("verbose", "v", "", "Verbose mode", TypeBool, 0)
+    start.AddFlag("username", "u", "username", "Username", TypeAlphanumeric, AllowDots|AllowUnderscore|IsRequired)
+    start.AddFlag("threshold", "", "1.5", "Threshold, default 1.5", TypeFloat, 0)
+    start.AddArg("input", "FILE", "Path to a file", TypePathFile, IRequired)
+    start.AddArg("difficulty", "DIFFICULTY", "Level of difficulty (1-5), default 3", TypeInt, 0)
 ```
 
-Fifth argument to `NewCLIFlag` is used to define what is the type of flag, is
-it required etc. It's an integer value and the following `const`s are
-available:
+One of the arguments to AddFlag, AddArg or AddEnvVar is type of the value.  It can be one of the Type* consts, eg.
+TypeInt, TypeBool, TypeString, TypePathFile etc.
 
-* `TypePathFile` - flag is a path to a file (string);
-* `MustExist` - if added along with `CLIFlagTypePathFile` then path must exist;
-* `Required` - flag is required (this does not work with bool flag);
-* `TypeString` - flag is a string;
-* `TypeBool` - flag is boolean and will have a value of "true" or "false";
-* `TypeAlphanumeric` - flag is string and have to match [0-9a-zA-Z]+.
+Just next to the type, there is an argument that can contain additional validation flags, such as:
 
-Check `cli_flag.go` for more information on flag types.
+* IsRequired when flag/arg is required;
+* AllowMultipleValues if flag/arg can have have multiple values, eg. 1,2,3, separated by comma or another character (there are flags for that such as SeparatorSemiColon etc.);
+* IsExistent which will cause a flag/arg to be checked if it exists;
+* IsRegularFile, IsDirectory, IsValidJSON and so on...
 
-Finally, let's create functions to handle our commands. In below code, you can
-see that method `Flag` on `CLI` instance (passed as first argument) can be
-used to get a flag value.
-
-```
-func InitHandler(c *broccli.CLI) int {
-    fmt.Fprintf(os.Stdout, "Template path: %s\n", c.Flag("template"))
-    return 0
-}
-
-func StartHandler(c *broccli.CLI) int {
-    fmt.Fprintf(os.Stdout, "Username: %s\n", c.Flag("username"))
-    return 0
-}
-```
+Check flags.go for more information on flag types.
 
 And in the end of `main()` func:
 
 ```
-    os.Exit(myCLI.Run(os.Stdout, os.Stderr))
+    os.Exit(myCLI.Run())
 ```
